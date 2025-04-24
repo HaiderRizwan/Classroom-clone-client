@@ -1,67 +1,102 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useState, useEffect } from "react"
 import type { ClassItem } from "@/types"
+import { classroomAPI } from "@/lib/api"
 
 interface ClassesContextType {
   classes: ClassItem[]
-  addClass: (classItem: ClassItem) => void
+  addClass: (name: string, section: string) => Promise<void>
+  joinClass: (code: string) => Promise<void>
   updateClass: (id: string, classItem: Partial<ClassItem>) => void
   deleteClass: (id: string) => void
-  getClassById: (id: string) => ClassItem | undefined
+  getClassById: (id: string) => Promise<ClassItem | undefined>
+  refreshClasses: () => Promise<void>
+  isLoading: boolean
 }
 
 export const ClassesContext = createContext<ClassesContextType>({
   classes: [],
-  addClass: () => {},
+  addClass: async () => {},
+  joinClass: async () => {},
   updateClass: () => {},
   deleteClass: () => {},
-  getClassById: () => undefined,
+  getClassById: async () => undefined,
+  refreshClasses: async () => {},
+  isLoading: false,
 })
 
 export function ClassesProvider({ children }: { children: React.ReactNode }) {
   const [classes, setClasses] = useState<ClassItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Simulate loading classes from an API
+  const refreshClasses = async () => {
+    setIsLoading(true)
+    try {
+      const data = await classroomAPI.getMyClassrooms()
+      setClasses(data.map((classroom: any) => ({
+        id: classroom._id,
+        name: classroom.name,
+        section: classroom.section,
+        teacher: classroom.teacher.name,
+        color: classroom.color || "#1a73e8",
+        coverImage: classroom.coverImage || "",
+        createdAt: classroom.createdAt,
+      })))
+    } catch (error) {
+      console.error('Failed to fetch classes:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
-    // In a real app, you would fetch from an API
-    const mockClasses: ClassItem[] = [
-      {
-        id: "1",
-        name: "Mathematics 101",
-        section: "Period 1",
-        teacher: "Demo Teacher",
-        color: "#1a73e8",
-        coverImage: "",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        name: "Science",
-        section: "Period 2",
-        teacher: "Demo Teacher",
-        color: "#00c853",
-        coverImage: "",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        name: "History",
-        section: "Period 3",
-        teacher: "Demo Teacher",
-        color: "#ff6d00",
-        coverImage: "",
-        createdAt: new Date().toISOString(),
-      },
-    ]
-
-    setClasses(mockClasses)
+    refreshClasses()
   }, [])
 
-  const addClass = (classItem: ClassItem) => {
-    setClasses((prev) => [...prev, classItem])
+  const addClass = async (name: string, section: string) => {
+    setIsLoading(true)
+    try {
+      const data = await classroomAPI.createClassroom({ name, section })
+      const newClass: ClassItem = {
+        id: data._id,
+        name: data.name,
+        section: data.section,
+        teacher: data.teacher.name,
+        color: data.color || "#1a73e8",
+        coverImage: data.coverImage || "",
+        createdAt: data.createdAt,
+      }
+      setClasses((prev) => [...prev, newClass])
+    } catch (error) {
+      console.error('Failed to create class:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const joinClass = async (code: string) => {
+    setIsLoading(true)
+    try {
+      const data = await classroomAPI.joinClassroom(code)
+      const newClass: ClassItem = {
+        id: data._id,
+        name: data.name,
+        section: data.section,
+        teacher: data.teacher.name,
+        color: data.color || "#1a73e8",
+        coverImage: data.coverImage || "",
+        createdAt: data.createdAt,
+      }
+      setClasses((prev) => [...prev, newClass])
+    } catch (error) {
+      console.error('Failed to join class:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const updateClass = (id: string, classItem: Partial<ClassItem>) => {
@@ -72,8 +107,22 @@ export function ClassesProvider({ children }: { children: React.ReactNode }) {
     setClasses((prev) => prev.filter((c) => c.id !== id))
   }
 
-  const getClassById = (id: string) => {
-    return classes.find((c) => c.id === id)
+  const getClassById = async (id: string) => {
+    try {
+      const data = await classroomAPI.getClassroomById(id)
+      return {
+        id: data._id,
+        name: data.name,
+        section: data.section,
+        teacher: data.teacher.name,
+        color: data.color || "#1a73e8",
+        coverImage: data.coverImage || "",
+        createdAt: data.createdAt,
+      }
+    } catch (error) {
+      console.error('Failed to fetch class:', error)
+      return undefined
+    }
   }
 
   return (

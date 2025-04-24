@@ -1,8 +1,7 @@
 "use client"
 
-import { useContext } from "react"
+import { useAuth } from "@/context/auth-context"
 import Link from "next/link"
-import { AuthContext } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -17,8 +16,8 @@ import { Menu, Plus, HelpCircle, Settings, LogOut } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Sidebar from "@/components/sidebar"
 
-export default function Navbar() {
-  const { user, logout } = useContext(AuthContext)
+export function Navbar() {
+  const { user, logout } = useAuth()
 
   return (
     <header className="border-b">
