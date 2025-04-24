@@ -38,8 +38,20 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', {
+        email: email.toLowerCase().trim(),
+        password
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Login failed';
+        console.error('Login error:', error.response?.data);
+        throw new Error(message);
+      }
+      throw error;
+    }
   },
   
   register: async (data: { name: string; email: string; password: string }) => {
